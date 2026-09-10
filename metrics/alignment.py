@@ -83,7 +83,8 @@ def align(x: torch.Tensor, y: torch.Tensor, w: torch.Tensor, trunc: Optional[Uni
     """
     if trunc is None:
         x, y, w = torch.broadcast_tensors(x, y, w)
-        sign = torch.sign(x)
+        # Zero source coordinates still contribute the constant residual |y|.
+        sign = torch.where(x < 0, -torch.ones_like(x), torch.ones_like(x))
         x, y = x * sign, y * sign
         y_div_x = y / x.clamp_min(eps)
         y_div_x, argsort = y_div_x.sort(dim=-1)
@@ -103,7 +104,8 @@ def align(x: torch.Tensor, y: torch.Tensor, w: torch.Tensor, trunc: Optional[Uni
         batch_size = math.prod(batch_shape)
         x, y, w = x.reshape(-1, x.shape[-1]), y.reshape(-1, y.shape[-1]), w.reshape(-1, w.shape[-1])
 
-        sign = torch.sign(x)
+        # Zero source coordinates still contribute the constant residual |y|.
+        sign = torch.where(x < 0, -torch.ones_like(x), torch.ones_like(x))
         x, y = x * sign, y * sign
         wx, wy = w * x, w * y
         xyw = torch.stack([x, y, w], dim=-1)    # Stacked for convenient gathering
